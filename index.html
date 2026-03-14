@@ -1,11 +1,17 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Websocket Demo</title>
-</head>
-<body>
-    
-</body>
+  </head>
+  <body></body>
+  <script>
+    let ws;
+    const proto = window.location.protocol === "https:" ? "wss" : "ws";
+    ws = new WebSocket(`${proto}://${window.location.host}`);
+    ws.onmessage = (event) => {
+      console.log("Received message:", event.data);
+    };
+  </script>
 </html>

@@ -2,3 +2,4 @@
 
 cd /var/www/app
 git pull origin main --ff-only
+npm install
