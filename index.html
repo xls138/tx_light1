@@ -3,9 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bilibili cc demo</title>
+    <title>Websocket Demo</title>
   </head>
-  <body>
-    <h1>bilibili cc demo</h1>
-  </body>
+  <body></body>
+  <script>
+    let ws;
+    const proto = window.location.protocol === "https:" ? "wss" : "ws";
+    ws = new WebSocket(`${proto}://${window.location.host}`);
+    ws.onmessage = (event) => {
+      console.log("Received message:", event.data);
+    };
+  </script>
 </html>
