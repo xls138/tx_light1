@@ -4,7 +4,7 @@ import axios from "axios";
 const app = express();
 
 app.get("/", (req, res) => {
-  res.send("B站字幕提取接口运行中，请使用 /api/subtitle 测试。");
+  res.send("Bilibili CC Demo");
 });
 
 app.get("/api/subtitle", async (req, res) => {
@@ -38,14 +38,17 @@ app.get("/api/subtitle", async (req, res) => {
 
     let subUrl = subList.find((s) => s.subtitle_url)?.subtitle_url;
 
-    const { data: bcc } = await axios.get(subUrl); // 5. 提取纯文本并返回下载
+    const { data: subtitleData } = await axios.get(subUrl); // 5. 提取纯文本并返回 JSON
+    const subtitles = (subtitleData.body || [])
+      .map((item) => item.content?.trim())
+      .filter(Boolean);
 
-    res.setHeader("Content-Type", "text/plain; charset=utf-8");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${encodeURIComponent(title)}.txt"`,
-    );
-    res.send(bcc.body.map((item) => item.content).join("\n"));
+    res.json({
+      title,
+      bvid,
+      cid,
+      subtitles,
+    });
   } catch (error) {
     res.status(500).json({ error: "获取字幕失败", msg: error.message });
   }
@@ -53,6 +56,6 @@ app.get("/api/subtitle", async (req, res) => {
 
 app.listen(3000, "0.0.0.0", () => {
   console.log(
-    "服务器已启动，访问 http://localhost:3000/api/subtitle?url=你的B站视频短链接",
+    "服务器已启动，访问 https://7yaz1.cn/api/subtitle?url=你的B站视频短链接",
   );
 });
