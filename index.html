@@ -1,12 +1,190 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <title>Bilibili CC Demo</title>
+    <title>B站字幕提取</title>
   </head>
-  <body>
-    <h1 class="text-3xl font-bold underline">Hello world!</h1>
+  <body class="min-h-screen bg-[#f6efe7] text-stone-900">
+    <main class="mx-auto max-w-md px-4 py-5">
+      <section
+        class="space-y-4 rounded-[28px] bg-white p-4 shadow-[0_16px_50px_rgba(0,0,0,0.08)]"
+      >
+        <header class="space-y-2">
+          <p
+            class="text-xs font-semibold tracking-[0.24em] text-orange-500 uppercase"
+          >
+            Bilibili Subtitle
+          </p>
+          <h1 class="text-2xl font-semibold leading-8">B站字幕提取</h1>
+          <p class="text-sm leading-6 text-stone-500">
+            粘贴整段分享文本或短链接，接口会自己处理。
+          </p>
+        </header>
+
+        <form id="subtitle-form" class="space-y-3">
+          <label class="block space-y-2">
+            <span class="text-sm font-medium text-stone-700">视频内容</span>
+            <textarea
+              id="video-input"
+              rows="4"
+              required
+              placeholder="【从夯到拉，锐评 39 个前端技术！-哔哩哔哩】 https://b23.tv/sbXfa0h"
+              class="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm leading-6 outline-none transition focus:border-orange-400 focus:bg-white"
+            ></textarea>
+          </label>
+
+          <button
+            id="submit-btn"
+            type="submit"
+            class="w-full rounded-2xl bg-stone-950 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+          >
+            获取字幕
+          </button>
+        </form>
+
+        <div
+          id="status"
+          class="hidden rounded-2xl border px-4 py-3 text-sm font-medium"
+        ></div>
+
+        <div
+          id="error-box"
+          class="hidden rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700"
+        ></div>
+
+        <section class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-semibold">字幕全文</h2>
+            <button
+              id="copy-btn"
+              type="button"
+              class="rounded-full border border-stone-300 px-3 py-1 text-xs font-medium text-stone-700"
+            >
+              复制
+            </button>
+          </div>
+
+          <div
+            id="empty-state"
+            class="rounded-[24px] border border-dashed border-stone-300 bg-stone-50 px-4 py-10 text-center text-sm leading-6 text-stone-500"
+          >
+            提交后，这里会显示字幕全文。
+          </div>
+
+          <pre
+            id="subtitle-text"
+            class="hidden min-h-[55vh] whitespace-pre-wrap break-words rounded-[24px] bg-stone-950 px-4 py-5 text-[15px] leading-8 text-stone-100"
+          ></pre>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById("subtitle-form");
+      const inputEl = document.getElementById("video-input");
+      const submitBtn = document.getElementById("submit-btn");
+      const statusEl = document.getElementById("status");
+      const errorBox = document.getElementById("error-box");
+      const emptyState = document.getElementById("empty-state");
+      const subtitleTextEl = document.getElementById("subtitle-text");
+      const copyBtn = document.getElementById("copy-btn");
+
+      function setStatus(text, tone) {
+        if (!text) {
+          statusEl.className = "hidden";
+          statusEl.textContent = "";
+          return;
+        }
+
+        const toneMap = {
+          loading: "border-amber-200 bg-amber-50 text-amber-700",
+          success: "border-emerald-200 bg-emerald-50 text-emerald-700",
+          error: "border-red-200 bg-red-50 text-red-700",
+        };
+
+        statusEl.className =
+          "rounded-2xl border px-4 py-3 text-sm font-medium " +
+          (toneMap[tone] || "border-stone-200 bg-white text-stone-500");
+        statusEl.textContent = text;
+      }
+
+      function setError(message) {
+        if (!message) {
+          errorBox.classList.add("hidden");
+          errorBox.textContent = "";
+          return;
+        }
+
+        errorBox.classList.remove("hidden");
+        errorBox.textContent = message;
+      }
+
+      function setLoading(loading) {
+        submitBtn.disabled = loading;
+        submitBtn.textContent = loading ? "请求中..." : "获取字幕";
+      }
+
+      function renderResult(data) {
+        const subtitles = Array.isArray(data.subtitles) ? data.subtitles : [];
+        subtitleTextEl.textContent = subtitles.join("\n");
+        emptyState.classList.add("hidden");
+        subtitleTextEl.classList.remove("hidden");
+      }
+
+      async function copySubtitle() {
+        if (!subtitleTextEl.textContent.trim()) return;
+
+        try {
+          await navigator.clipboard.writeText(subtitleTextEl.textContent);
+          const originalText = copyBtn.textContent;
+          copyBtn.textContent = "已复制";
+          window.setTimeout(() => {
+            copyBtn.textContent = originalText;
+          }, 1500);
+        } catch (error) {
+          setError("复制失败，请手动复制字幕内容。");
+        }
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const inputValue = inputEl.value.trim();
+        if (!inputValue) {
+          setError("请先粘贴分享文本或短链接。");
+          return;
+        }
+
+        setLoading(true);
+        setError("");
+        setStatus("正在获取字幕...", "loading");
+
+        try {
+          const response = await fetch(
+            `/api/subtitle?url=${encodeURIComponent(inputValue)}`,
+          );
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.msg || data.error || "请求失败");
+          }
+
+          renderResult(data);
+          setStatus("获取成功", "success");
+        } catch (error) {
+          subtitleTextEl.classList.add("hidden");
+          subtitleTextEl.textContent = "";
+          emptyState.classList.remove("hidden");
+          setError(error.message || "获取字幕失败，请稍后重试。");
+          setStatus("请求失败", "error");
+        } finally {
+          setLoading(false);
+        }
+      });
+
+      copyBtn.addEventListener("click", copySubtitle);
+    </script>
   </body>
 </html>
