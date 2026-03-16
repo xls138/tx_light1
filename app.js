@@ -1,10 +1,54 @@
-import http from 'node:http';
+import express from "express";
+import axios from "axios";
 
-const server = http.createServer((req, res) => {
-  res.write('On the way to being a full snack engineer');
-  res.end();
+const app = express();
+
+app.get("/api/subtitle", async (req, res) => {
+  try {
+    let { url } = req.query;
+    const linkMatch = url.match(/(https?:\/\/[^\s]+)/);
+    url = linkMatch[0]; // 1. 解析短链并提取 BVID
+
+    if (url.includes("b23.tv")) {
+      const jumpRes = await axios.get(url, {
+        maxRedirects: 0,
+        validateStatus: () => true,
+      });
+      url = jumpRes.headers.location || url;
+    }
+    const bvid = url.match(/BV[\da-zA-Z]{10}/i)?.[0]; // 2. 获取视频基础信息 (cid, title)
+
+    const {
+      data: {
+        data: { cid, title },
+      },
+    } = await axios.get(
+      `https://api.bilibili.com/x/web-interface/view?bvid=${bvid}`,
+    );
+
+    // 3. 直接请求弹幕接口提取字幕列表 (策略 B)
+    const { data: dm } = await axios.get(
+      `https://api.bilibili.com/x/v2/dm/view?type=1&oid=${cid}&bvid=${bvid}`,
+    );
+    let subList = dm.data?.subtitle?.subtitles || []; // 4. 获取真实的 JSON 链接并请求数据
+
+    let subUrl = subList.find((s) => s.subtitle_url)?.subtitle_url;
+
+    const { data: bcc } = await axios.get(subUrl); // 5. 提取纯文本并返回下载
+
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${encodeURIComponent(title)}.txt"`,
+    );
+    res.send(bcc.body.map((item) => item.content).join("\n"));
+  } catch (error) {
+    res.status(500).json({ error: "获取字幕失败", msg: error.message });
+  }
 });
 
-server.listen(3000, '0.0.0.0', () => {
-  console.log('Server started on port 3000');
+app.listen(3000, "0.0.0.0", () => {
+  console.log(
+    "服务器已启动，访问 http://localhost:3000/api/subtitle?url=你的B站视频短链接",
+  );
 });
