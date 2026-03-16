@@ -1,16 +1,18 @@
 import express from "express";
 import axios from "axios";
+import { fileURLToPath } from "url";
 
 const app = express();
 
 app.get("/", (req, res) => {
-  res.send("Bilibili CC Demo");
+  res.sendFile(fileURLToPath(new URL("./index.html", import.meta.url)));
 });
 
 app.get("/api/subtitle", async (req, res) => {
   try {
     let { url } = req.query;
-    const linkMatch = url.match(/(https?:\/\/[^\s]+)/);
+    const decodedUrl = decodeURIComponent(url);
+    const linkMatch = decodedUrl.match(/(https?:\/\/[^\s]+)/);
     url = linkMatch[0]; // 1. 解析短链并提取 BVID
 
     if (url.includes("b23.tv")) {
