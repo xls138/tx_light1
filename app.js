@@ -3,6 +3,10 @@ import axios from "axios";
 
 const app = express();
 
+app.get("/", (req, res) => {
+  res.send("B站字幕提取接口运行中，请使用 /api/subtitle 测试。");
+});
+
 app.get("/api/subtitle", async (req, res) => {
   try {
     let { url } = req.query;
