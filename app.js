@@ -56,7 +56,7 @@ app.get("/api/subtitle", async (req, res) => {
   }
 });
 
-app.listen(3000, "0.0.0.0", () => {
+app.listen(3000, () => {
   console.log(
     "服务器已启动，访问 https://7yaz1.cn/api/subtitle?url=你的B站视频短链接",
   );

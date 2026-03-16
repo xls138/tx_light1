@@ -19,13 +19,27 @@
           </p>
           <h1 class="text-2xl font-semibold leading-8">B站字幕提取</h1>
           <p class="text-sm leading-6 text-stone-500">
-            粘贴整段分享文本或短链接，接口会自己处理。
+            粘贴整段分享文本和短链接。
           </p>
         </header>
 
         <form id="subtitle-form" class="space-y-3">
-          <label class="block space-y-2">
-            <span class="text-sm font-medium text-stone-700">视频内容</span>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between gap-3">
+              <label
+                for="video-input"
+                class="text-sm font-medium text-stone-700"
+              >
+                视频内容
+              </label>
+              <button
+                id="clear-input-btn"
+                type="button"
+                class="hidden rounded-full border border-stone-300 px-3 py-1 text-xs font-medium text-stone-600 transition hover:border-stone-400 hover:text-stone-900"
+              >
+                清空
+              </button>
+            </div>
             <textarea
               id="video-input"
               rows="4"
@@ -33,7 +47,7 @@
               placeholder="【从夯到拉，锐评 39 个前端技术！-哔哩哔哩】 https://b23.tv/sbXfa0h"
               class="w-full rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm leading-6 outline-none transition focus:border-orange-400 focus:bg-white"
             ></textarea>
-          </label>
+          </div>
 
           <button
             id="submit-btn"
@@ -81,6 +95,28 @@
       </section>
     </main>
 
+    <button
+      id="back-to-top-btn"
+      type="button"
+      aria-label="返回顶部"
+      class="fixed right-5 bottom-6 flex h-12 w-12 items-center justify-center rounded-full border border-stone-200 bg-white/92 text-stone-700 shadow-[0_12px_30px_rgba(0,0,0,0.14)] backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:bg-orange-50 hover:text-orange-600"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="h-5 w-5"
+        aria-hidden="true"
+      >
+        <path d="M12 19V5" />
+        <path d="m5 12 7-7 7 7" />
+      </svg>
+    </button>
+
     <script>
       const form = document.getElementById("subtitle-form");
       const inputEl = document.getElementById("video-input");
@@ -90,6 +126,8 @@
       const emptyState = document.getElementById("empty-state");
       const subtitleTextEl = document.getElementById("subtitle-text");
       const copyBtn = document.getElementById("copy-btn");
+      const clearInputBtn = document.getElementById("clear-input-btn");
+      const backToTopBtn = document.getElementById("back-to-top-btn");
 
       function setStatus(text, tone) {
         if (!text) {
@@ -126,6 +164,10 @@
         submitBtn.textContent = loading ? "请求中..." : "获取字幕";
       }
 
+      function syncClearButton() {
+        clearInputBtn.classList.toggle("hidden", !inputEl.value.trim());
+      }
+
       function renderResult(data) {
         const subtitles = Array.isArray(data.subtitles) ? data.subtitles : [];
         subtitleTextEl.textContent = subtitles.join("\n");
@@ -146,6 +188,13 @@
         } catch (error) {
           setError("复制失败，请手动复制字幕内容。");
         }
+      }
+
+      function clearInput() {
+        inputEl.value = "";
+        inputEl.focus();
+        setError("");
+        syncClearButton();
       }
 
       form.addEventListener("submit", async (event) => {
@@ -185,6 +234,12 @@
       });
 
       copyBtn.addEventListener("click", copySubtitle);
+      clearInputBtn.addEventListener("click", clearInput);
+      inputEl.addEventListener("input", syncClearButton);
+      backToTopBtn.addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+      syncClearButton();
     </script>
   </body>
 </html>
